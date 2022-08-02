@@ -13,24 +13,24 @@ app.get('/', (_request, response) => {
   response.status(HTTP_OK_STATUS).send();
 });
 
-app.get('/talker', function name(req,res) {
-  res.status(200).json(talker)
+app.get('/talker', (req, res) => {
+  res.status(HTTP_OK_STATUS).json(talker);
+});
 
-})
-
-app.get('/talker/:id', function name(req,res) {
+app.get('/talker/:id', (req, res) => {
   const { id } = req.params;
-  console.log('meu log',typeof(id));
-  const talkerSelected = talker.find((person)=> person.id === Number(id))
+  console.log('meu log', typeof id);
+  const talkerSelected = talker.find((person) => person.id === Number(id));
   if (!talkerSelected) {
-    return res.status(404).json({"message": "Pessoa palestrante não encontrada"})
+    return res
+      .status(404)
+      .json({ message: 'Pessoa palestrante não encontrada' });
   }
-  res.status(200).json(talkerSelected)
-})
+  res.status(HTTP_OK_STATUS).json(talkerSelected);
+});
 
 app.listen(PORT, () => {
   console.log('Online');
 });
 
-
-/// iniciando projeto
+///
