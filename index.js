@@ -1,8 +1,20 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const talker = require('./talker.json');
+require('express-async-errors');
+const rescue = require('express-rescue');
+const fs = require('fs').promises;
+const errosMiddlewares = require('./middlewares/errosMiddlewares');
+// const talker = require('./talker.json');
 const { generateTokens } = require('./services/tokenGeretor');
 const { authEmail, authPassword } = require('./middlewares/authEmailAndPassword');
+const { 
+  validateAuthorization, 
+  validateName, 
+  validateAge, 
+  validateTalk, 
+  validateTalkWatchedAt,
+  validateTalkRate,
+} = require('./middlewares/validadPosttalker');
 
 const app = express();
 app.use(bodyParser.json());
@@ -15,35 +27,25 @@ app.get('/', (_request, response) => {
   response.status(HTTP_OK_STATUS).send();
 });
 
-// funçoes de middlewares
-// function authEmail(req, res, next) {
-//   const { email, password } = req.body;
-//   const emailRegex = /^[a-zA-Z0-9_.-]+@[a-zA-Z0-9-]+.[a-zA-Z0-9-.]+$/;
-//   if (!email) {
-//     return res.status(400).json({ message: 'O campo "email" é obrigatório' });
-//   }
-//   if (!emailRegex.test(email)) {
-//     return res.status(400).json({ message: 'O "email" deve ter o formato "email@email.com"' });
-//   }
-//   if (!password) {
-//     return res.status(400).json({ message: 'O campo "password" é obrigatório' });
-//   }
-//   if (password.toString().length < 6) {
-//     return res.status(400).json({ message: 'O "password" deve ter pelo menos 6 caracteres' });
-//   }
-//   next();
-// }
-
-// fim
-
-app.get('/talker', (req, res) => {
-  res.status(HTTP_OK_STATUS).json(talker);
+app.get('/talker', async (req, res) => {
+  const talker = await fs.readFile('./talker.json', 'utf-8')
+    .catch((err) => {
+      console.log(err);
+      return false;
+    });
+  const response = JSON.parse(talker);
+  res.status(HTTP_OK_STATUS).json(response);
 });
 
-app.get('/talker/:id', (req, res) => {
+app.get('/talker/:id', async (req, res) => {
   const { id } = req.params;
-  // console.log('meu log', typeof id);
-  const talkerSelected = talker.find((person) => person.id === Number(id));
+  const talker = await fs.readFile('./talker.json', 'utf-8')
+    .catch((err) => {
+      console.log(err);
+      return false;
+    });
+  const talkerConverted = JSON.parse(talker);
+  const talkerSelected = talkerConverted.find((person) => person.id === Number(id));
   if (!talkerSelected) {
     return res
       .status(404)
@@ -52,15 +54,38 @@ app.get('/talker/:id', (req, res) => {
   res.status(HTTP_OK_STATUS).json(talkerSelected);
 });
 
-app.post('/talker/:id', () => {
-
-});
+app.post('/talker',
+  validateAuthorization,
+  validateName,
+  validateAge,
+  validateTalk,
+  validateTalkWatchedAt,
+  validateTalkRate,
+  rescue(async (req, res) => {
+  const person = req.body;
+  const talker = await fs.readFile('./talker.json', 'utf8')
+    .catch((err) => {
+      console.log(err);
+      return [];
+    });
+  const talkerConverted = JSON.parse(talker);
+  // console.log('primeiro', typeof(person));
+  talkerConverted.push({ ...person, id: talkerConverted.length + 1 });
+  // console.log('meu log ' ,talkerConverted);
+  try {
+    await fs.writeFile('./talker.json', JSON.stringify(talkerConverted));
+    res.status(201).json(talkerConverted[talkerConverted.length - 1]);
+  } catch (error) {
+    console.log(error);
+  }
+}));
 
 app.post('/login', authEmail, authPassword, (req, res) => {
-  // const { email, password } = req.body;
   const token = generateTokens();
   res.status(HTTP_OK_STATUS).json({ token });
 });
+
+app.use(errosMiddlewares);
 
 app.listen(PORT, () => {
   console.log('Online');
