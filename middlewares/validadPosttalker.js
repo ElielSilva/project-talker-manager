@@ -67,11 +67,11 @@ function validateTalkWatchedAt(req, res, next) {
 
 function validateTalkRate(req, res, next) {
   const { rate } = req.body.talk;
-  // console.log(rate, typeof (rate), '  ', Number.isInteger(rate) !== true || rate < 0 || rate > 6);
-  if (!rate) {
+  // console.log(rate, typeof (rate) !== "number", rate < 0 || rate > 5 || !rate);
+  if (typeof (rate) !== 'number') {
     return res.status(400).json({ message: 'O campo "rate" é obrigatório' });
   }
-  if (rate < 0 || rate > 6) {
+  if (rate <= 0 || rate > 5) {
     return res.status(400).json({ message: 'O campo "rate" deve ser um inteiro de 1 à 5' });
   }
   next();
